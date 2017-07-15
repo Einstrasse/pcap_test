@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
 	pcap_t *handle;
 	const u_char *packet;
 	struct pcap_pkthdr header;
+	struct pcap_pkthdr* header_ptr;
+	const u_char *pkt_data;
 
 
 	if (argc < 2) {
@@ -34,9 +36,11 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	packet = pcap_next(handle, &header);
+	// packet = pcap_next(handle, &header);
+	pcap_next_ex(handle, &header_ptr, &pkt_data);
 	printf("finished capturing packets\n");
-	printf("captured packet len %d\n", header.len);
+	// printf("captured packet len %d\n", header.len);
+	printf("captured packet len %d\n", header_ptr->len);
 	pcap_close(handle);
 	return EXIT_SUCCESS;
 }
