@@ -15,8 +15,9 @@ int main(int argc, char *argv[]) {
 		printf("usage: %s [capture time in milliseconds]\n", argv[0]);
 		exit(EXIT_SUCCESS);
 	}
-	capture_time = atoi(argv[1]);
-	
+	//capture_time = atoi(argv[1]);
+	capture_time = 10000;
+
 	dev = pcap_lookupdev(errbuf);
 	if (dev == NULL) {
 		fprintf(stderr, "Cannot find default device: %s\n", errbuf);
@@ -24,8 +25,12 @@ int main(int argc, char *argv[]) {
 	}
 	printf("Default Device: %s\n", dev);
 
-	handle = pcap_open_live(dev, PACK_BUF_SIZE, 1, capture_time, errbuf);
 	printf("start capturing packet for %d milliseconds...\n", capture_time);
+	handle = pcap_open_live(dev, PACK_BUF_SIZE, 1, capture_time, errbuf);
+	if (handle == NULL) {
+		fprintf(stderr, "Cannot open device %s: %s\n", dev, errbuf);
+		exit(EXIT_FAILURE);
+	}
 	printf("finished capturing packets\n");
 	return EXIT_SUCCESS;
 }
