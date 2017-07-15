@@ -1,7 +1,7 @@
 ## pcap programming assignment
 
 
-### compile environment
+### Compile environment
 
 1. Debian Linuxs (Ubuntu / Kali)
 2. gcc
@@ -10,6 +10,12 @@
     sudo apt install -y libpcap-dev
 ```
 
-### sources code explaination
+### Compile command
+
+make
+
+### Sources code explaination
 
 dump_if.c - dump network iterface name
+get_packet.c - capturing packet for a while sample
+sample.c - sample source code from web site
