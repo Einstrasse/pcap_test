@@ -1,5 +1,8 @@
 ## pcap programming assignment
 
+Best of the Best 6th    
+Security Consulting Track    
+Jung Hangil
 
 ### Compile environment
 
@@ -7,7 +10,7 @@
 2. gcc
 3. pcap library
 ```
-    sudo apt install -y libpcap-dev
+sudo apt install -y libpcap-dev
 ```
 
 ### Compile command
@@ -23,8 +26,8 @@ sample.c - sample source code from web site
 
 ### Usage
 ```
-	make
-	./get_packet 50
+make
+./get_packet 50
 ```
 
 On above usage, 50 means the limit number of packet to dump.    
