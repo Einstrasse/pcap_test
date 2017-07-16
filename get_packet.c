@@ -40,7 +40,16 @@ int main(int argc, char *argv[]) {
 	int counter = 0;
 	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
 		counter++;
-		printf("#%03d PACKET_LENGTH %d\n", counter, header_ptr->len);
+		printf("\t#%03d PACKET_LENGTH %d\n", counter, header_ptr->len);
+		printf("Dest MAC = ");
+		for (int i=0; i < 6; i++) {
+			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
+				printf("%x", *(pkt_data + i) & 0xff);
+			} else {
+				printf("0%x", *(pkt_data + i) & 0xff);
+			}
+			if (i < 5) putchar(':'); else putchar('\n');
+		}
 		printf(" ============== PACKET HEX DATA ===============\n");
 		for (int i = 0; i < header_ptr->len; i++) {
 			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
