@@ -36,26 +36,29 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	// packet = pcap_next(handle, &header);
-	pcap_next_ex(handle, &header_ptr, &pkt_data);
 	printf("finished capturing packets\n");
-	// printf("captured packet len %d\n", header.len);
-	printf("captured packet len %d\n", header_ptr->len);
-	printf(" ============== PACKET HEX DATA ===============\n");
-	for (int i = 0; i < header_ptr->len; i++) {
-		if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
-			printf("%x ", *(pkt_data + i) & 0xff);
-		} else {
-			printf("0%x ", *(pkt_data + i) & 0xff);
+	int counter = 0;
+	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
+		counter++;
+		printf("#%03d PACKET_LENGTH %d\n", counter, header_ptr->len);
+		printf(" ============== PACKET HEX DATA ===============\n");
+		for (int i = 0; i < header_ptr->len; i++) {
+			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
+				printf("%x ", *(pkt_data + i) & 0xff);
+			} else {
+				printf("0%x ", *(pkt_data + i) & 0xff);
+			}
+			if (i % 16 == 15) {
+				putchar('\n');
+			}
+			 else if (i % 8 == 7) {
+				putchar(' ');
+			}
 		}
-		if (i % 16 == 15) {
-			putchar('\n');
-		}
-		 else if (i % 8 == 7) {
-			putchar(' ');
-		}
+		putchar('\n');
 	}
-	putchar('\n');
+
+
 	pcap_close(handle);
 	return EXIT_SUCCESS;
 }
