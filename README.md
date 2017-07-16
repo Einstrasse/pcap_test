@@ -16,8 +16,8 @@ make
 
 ### Sources code explaination
 
-get_packet.c - capturing packet for a while and dump the contents of packet.
-dump_if.c - dump network iterface name
+get_packet.c - capturing packet for a while and dump the contents of packet.    
+dump_if.c - dump network iterface name    
 sample.c - sample source code from web site
 
 
@@ -27,5 +27,5 @@ sample.c - sample source code from web site
 	./get_packet 50
 ```
 
-On above usage, 50 means the limit number of packet to dump.
+On above usage, 50 means the limit number of packet to dump.    
 Executing on previleged user(root) is recommended.
