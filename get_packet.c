@@ -7,7 +7,8 @@
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
-#define DATA_PRINT_LIMIT 16
+#define DATA_PRINT_LIMIT 100
+
 
 
 // uint32_t htonl(uint32_t hostlong);
@@ -26,11 +27,13 @@ int main(int argc, char *argv[]) {
 	int ether_len = 14;
 	int ip_hdr_len = -1;
 	u_char tcp_header_len = 0;
+	capture_time = 1000;
+	int capture_packet_num_limit = 1;
 	if (argc < 2) {
-		printf("usage: %s [capture time in milliseconds]\n", argv[0]);
+		printf("usage: %s [MAXIMUM NUMBER OF PACKET TO CAPTURE]\n", argv[0]);
 		exit(EXIT_SUCCESS);
 	}
-	capture_time = atoi(argv[1]);
+	capture_packet_num_limit = atoi(argv[1]);
 
 	dev = pcap_lookupdev(errbuf);
 	if (dev == NULL) {
@@ -50,6 +53,7 @@ int main(int argc, char *argv[]) {
 	int counter = 0;
 	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
 		counter++;
+		if (counter > capture_packet_num_limit) break;
 		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
 		printf("%12s", "Dst MAC = ");
 		for (int i=0; i < 6; i++) {
@@ -83,14 +87,14 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		if ( header_ptr->len >= 34) {
-			u_char* srcIP = pkt_data + 26;
+			u_char* srcIP = (u_char*)(pkt_data + 26);
 			printf("%12s = %d.%d.%d.%d\n", "Src IP Addr", srcIP[0], srcIP[1], srcIP[2], srcIP[3]);
-			u_char* dstIP = pkt_data + 30;
+			u_char* dstIP = (u_char*)(pkt_data + 30);
 			printf("%12s = %d.%d.%d.%d\n", "Dst IP Addr", dstIP[0], dstIP[1], dstIP[2], dstIP[3]);
 		}
 		if (ip_hdr_len != -1 && header_ptr->len >= ip_hdr_len + ether_len) {
-			u_short *srcPort = pkt_data + ip_hdr_len + ether_len;
-			u_short *dstPort = pkt_data + ip_hdr_len + ether_len + 2;
+			u_short *srcPort = (u_short*)(pkt_data + ip_hdr_len + ether_len);
+			u_short *dstPort = (u_short*)(pkt_data + ip_hdr_len + ether_len + 2);
 
 			printf("%10s = %d\n", "Src Port", ntohs(*srcPort));
 			printf("%10s = %d\n", "Dst Port", ntohs(*dstPort));
@@ -100,7 +104,8 @@ int main(int argc, char *argv[]) {
 		if (tcp_header_len > 0 &&header_ptr->len >= ip_hdr_len + ether_len + tcp_header_len) {
 			printf("Packet Payload\n");
 			int cnt = 0;
-			for (int idx = ip_hdr_len + ether_len + tcp_header_len; idx < header_ptr->len; idx++) {
+			for (int idx = ip_hdr_len + ether_len + tcp_header_len; idx < header_ptr->len; idx++, cnt++) {
+				if (cnt > DATA_PRINT_LIMIT) break;
 				if (isprint(*(pkt_data + idx))) {
 					printf("%c", *(pkt_data + idx));
 				} else {
@@ -111,22 +116,6 @@ int main(int argc, char *argv[]) {
 		} else {
 			printf("There is no Data\n");
 		}
-		printf("-===-=-=-=-=-=-=-==-==-=-=-=-==-=-=--=-=-=--=-=\n");
-		// printf(" ============== PACKET HEX DATA ===============\n");
-		// for (int i = 0; i < header_ptr->len; i++) {
-		// 	if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
-		// 		printf("%x ", *(pkt_data + i) & 0xff);
-		// 	} else {
-		// 		printf("0%x ", *(pkt_data + i) & 0xff);
-		// 	}
-		// 	if (i % 16 == 15) {
-		// 		putchar('\n');
-		// 	}
-		// 	 else if (i % 8 == 7) {
-		// 		putchar(' ');
-		// 	}
-		// }
-		// putchar('\n');
 	}
 
 
