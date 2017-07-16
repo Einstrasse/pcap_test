@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
 		counter++;
 		printf("\t#%03d PACKET_LENGTH %d\n", counter, header_ptr->len);
-		printf("Dest MAC = ");
+		printf("%12s", "Dest MAC = ");
 		for (int i=0; i < 6; i++) {
 			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
 				printf("%x", *(pkt_data + i) & 0xff);
@@ -49,6 +49,20 @@ int main(int argc, char *argv[]) {
 				printf("0%x", *(pkt_data + i) & 0xff);
 			}
 			if (i < 5) putchar(':'); else putchar('\n');
+		}
+		printf("%12s", "Src MAC = ");
+		for (int i=6; i < 12; i++) {
+			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
+				printf("%x", *(pkt_data + i) & 0xff);
+			} else {
+				printf("0%x", *(pkt_data + i) & 0xff);
+			}
+			if (i < 11) putchar(':'); else putchar('\n');
+		}
+		if ( *(pkt_data + 12) == 0x08 && *(pkt_data + 13) == 0x00) {
+			printf("Type: IPv4\n");
+			int ip_hdr_len = ( *(pkt_data + 14) & 0xf ) * 4;
+			printf("IP Packet header len: %d\n", ip_hdr_len);
 		}
 		printf(" ============== PACKET HEX DATA ===============\n");
 		for (int i = 0; i < header_ptr->len; i++) {
