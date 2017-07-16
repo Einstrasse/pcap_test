@@ -3,10 +3,11 @@
 #include <pcap.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+#include <ctype.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
-
+#define DATA_PRINT_LIMIT 16
 
 
 // uint32_t htonl(uint32_t hostlong);
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]) {
 	int counter = 0;
 	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
 		counter++;
-		printf("\t#%03d PACKET_LENGTH %d\n", counter, header_ptr->len);
+		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
 		printf("%12s", "Dst MAC = ");
 		for (int i=0; i < 6; i++) {
 			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
@@ -98,27 +99,34 @@ int main(int argc, char *argv[]) {
 		}
 		if (tcp_header_len > 0 &&header_ptr->len >= ip_hdr_len + ether_len + tcp_header_len) {
 			printf("Packet Payload\n");
+			int cnt = 0;
 			for (int idx = ip_hdr_len + ether_len + tcp_header_len; idx < header_ptr->len; idx++) {
-				printf("%c", *(pkt_data + idx));
+				if (isprint(*(pkt_data + idx))) {
+					printf("%c", *(pkt_data + idx));
+				} else {
+					printf(".");
+				}
 			}
+			putchar('\n');
 		} else {
 			printf("There is no Data\n");
 		}
-		printf(" ============== PACKET HEX DATA ===============\n");
-		for (int i = 0; i < header_ptr->len; i++) {
-			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
-				printf("%x ", *(pkt_data + i) & 0xff);
-			} else {
-				printf("0%x ", *(pkt_data + i) & 0xff);
-			}
-			if (i % 16 == 15) {
-				putchar('\n');
-			}
-			 else if (i % 8 == 7) {
-				putchar(' ');
-			}
-		}
-		putchar('\n');
+		printf("-===-=-=-=-=-=-=-==-==-=-=-=-==-=-=--=-=-=--=-=\n");
+		// printf(" ============== PACKET HEX DATA ===============\n");
+		// for (int i = 0; i < header_ptr->len; i++) {
+		// 	if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
+		// 		printf("%x ", *(pkt_data + i) & 0xff);
+		// 	} else {
+		// 		printf("0%x ", *(pkt_data + i) & 0xff);
+		// 	}
+		// 	if (i % 16 == 15) {
+		// 		putchar('\n');
+		// 	}
+		// 	 else if (i % 8 == 7) {
+		// 		putchar(' ');
+		// 	}
+		// }
+		// putchar('\n');
 	}
 
 
