@@ -45,9 +45,16 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	printf("finished capturing packets\n");
 	int counter = 0;
-	while( pcap_next_ex(handle, &header_ptr, &pkt_data) ) {
+	while(1) {
+		int status = pcap_next_ex(handle, &header_ptr, &pkt_data);
+		if (status == 0) {
+			continue;
+		} else if (status == -1) {
+			 fprintf(stderr, "Failed to set buffer size on capture handle : %s\n",
+                        pcap_geterr(handle));
+			break;
+		}
 		counter++;
 		if (counter > capture_packet_num_limit) break;
 		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
