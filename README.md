@@ -36,5 +36,12 @@ Executing on previleged user(root) is recommended.
 
 ### References
 
-Referencing Ethernet header type struct    
+Referencing Ethernet header type struct ether_header    
 http://unix.superglobalmegacorp.com/Net2/newsrc/netinet/if_ether.h.html    
+Referencing Ip header type struct ip     
+http://unix.superglobalmegacorp.com/Net2/newsrc/netinet/ip.h.html     
+Referencing ip address structrue, struct in_addr    
+https://www.joinc.co.kr/w/man/15/in_addr    
+Reference inet_ntop    
+https://www.joinc.co.kr/w/Site/TCP_IP/IPv6/IPv6Prog    
+

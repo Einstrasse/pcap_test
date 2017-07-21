@@ -5,13 +5,16 @@
 #include <netinet/in.h>
 #include <ctype.h>
 #include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
 #define DATA_PRINT_LIMIT 300
 
-
-
+#define PROTO_TCP 0x06
+#define PROTO_UDP 0x11
 
 int capture_time;
 int main(int argc, char *argv[]) {
@@ -63,7 +66,18 @@ int main(int argc, char *argv[]) {
 		counter++;
 		if (counter > capture_packet_num_limit) break;
 		struct ether_header *ether_hdr;
+		struct ip *ip_hdr;
 		ether_hdr = (struct ether_header*)pkt_data;
+		if (ntohs(ether_hdr->ether_type) == ETHERTYPE_IP) {
+			ip_hdr = (struct ip*)(pkt_data + sizeof(struct ether_header));
+		} else {
+			//not IP protocol
+			continue;
+		}
+		if (ip_hdr->ip_p != PROTO_TCP) {
+			//printf("not tcp proto\n");
+			continue;
+		}
 
 		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
 		printf("%s", "* Dst MAC = ");
@@ -79,25 +93,23 @@ int main(int argc, char *argv[]) {
 		if (ether_hdr->ether_type == ETHERTYPE_IP) {
 			printf("* Network Layer Protocol Type: IPv4\n");
 		}
-		// if ( header_ptr->len >= 14 && *(pkt_data + 12) == 0x08 && *(pkt_data + 13) == 0x00) {
-		// 	printf("* Network Layer Protocol Type: IPv4\n");
-		// 	ip_hdr_len = ( *(pkt_data + 14) & 0xf ) * 4;
-		// 	printf("* IP Packet header len: %d\n", ip_hdr_len);
-		// }
-			u_char protocol_4 = *(pkt_data + 23);
-		if ( header_ptr->len >= 24 ) {
-			if ( protocol_4 == 0x06 ) {
-				printf("* Transport Layer Protocol Type: TCP\n");
-			} else if ( protocol_4 == 0x11 ) {
-				printf("* Transport Layer Protocol Type: UDP\n");
-			}
+		if (ip_hdr->ip_p == PROTO_TCP) {
+			printf("* Transport Layer Protocol Type: TCP\n");
 		}
-		if ( header_ptr->len >= 34) {
-			u_char* srcIP = (u_char*)(pkt_data + 26);
-			printf("%s = %d.%d.%d.%d\n", "* Src IP Addr", srcIP[0], srcIP[1], srcIP[2], srcIP[3]);
-			u_char* dstIP = (u_char*)(pkt_data + 30);
-			printf("%s = %d.%d.%d.%d\n", "* Dst IP Addr", dstIP[0], dstIP[1], dstIP[2], dstIP[3]);
-		}
+		struct in_addr src_ip = ip_hdr->ip_src;
+		struct in_addr dst_ip = ip_hdr->ip_dst;
+		char src_ip_str[25];
+		char dst_ip_str[25];
+		inet_ntop(AF_INET, (void *)&src_ip, src_ip_str, 24);
+		inet_ntop(AF_INET, (void *)&dst_ip, dst_ip_str, 24);
+		printf("* Src IP Addr = %s\n", src_ip_str);
+		printf("* Dst IP Addr = %s\n", dst_ip_str);
+		
+		// u_char* srcIP = (u_char*)(pkt_data + 26);
+		// printf("%s = %d.%d.%d.%d\n", "* Src IP Addr", srcIP[0], srcIP[1], srcIP[2], srcIP[3]);
+		// u_char* dstIP = (u_char*)(pkt_data + 30);
+		// printf("%s = %d.%d.%d.%d\n", "* Dst IP Addr", dstIP[0], dstIP[1], dstIP[2], dstIP[3]);
+		
 		if (ip_hdr_len != -1 && header_ptr->len >= ip_hdr_len + ether_len) {
 			u_short *srcPort = (u_short*)(pkt_data + ip_hdr_len + ether_len);
 			u_short *dstPort = (u_short*)(pkt_data + ip_hdr_len + ether_len + 2);
