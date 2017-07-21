@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
+#include <stdint.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
@@ -16,24 +17,22 @@
 
 #define PROTO_TCP 0x06
 #define PROTO_UDP 0x11
+#define PAYLOAD_DUMP_LIMIT 100
+
+#pragma warning disable -Wdiscarded-qualifiers
 
 int capture_time;
 int main(int argc, char *argv[]) {
 	char *dev, errbuf[PCAP_ERR_BUF_SIZE];
 	pcap_t *handle;
-	const u_char *packet;
-	struct pcap_pkthdr header;
 	struct pcap_pkthdr* header_ptr;
 	const u_char *pkt_data;
-	int ether_len = 14;
 	
 	capture_time = 1000;
-	int capture_packet_num_limit = 1;
 	if (argc < 2) {
 		printf("usage: %s [Network Interface name]\n", argv[0]);
 		exit(EXIT_SUCCESS);
 	}
-	capture_packet_num_limit = 10000;
 
 	dev = argv[1];
 
@@ -45,7 +44,6 @@ int main(int argc, char *argv[]) {
 
 	printf("start capturing packet for %d milliseconds...\n", capture_time);
 	handle = pcap_open_live(dev, PACK_BUF_SIZE, 1, capture_time, errbuf);
-	//handle = pcap_open_live("dum0", PACK_BUF_SIZE, 1, capture_time, errbuf);
 	if (handle == NULL) {
 		fprintf(stderr, "Cannot open device %s: %s\n", dev, errbuf);
 		exit(EXIT_FAILURE);
@@ -63,7 +61,6 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 		counter++;
-		if (counter > capture_packet_num_limit) break;
 		struct ether_header *ether_hdr;
 		struct ip *ip_hdr;
 		struct tcphdr *tcp_hdr;
@@ -71,8 +68,7 @@ int main(int argc, char *argv[]) {
 		if (ntohs(ether_hdr->ether_type) == ETHERTYPE_IP) {
 			ip_hdr = (struct ip*)(pkt_data + sizeof(struct ether_header));
 		} else {
-			printf("not ip proto\n");
-			//not IP protocol
+			//printf("not ip proto\n");
 			continue;
 		}
 		int ip_hdr_len = ip_hdr->ip_hl * 4;
@@ -80,7 +76,7 @@ int main(int argc, char *argv[]) {
 		if (ip_hdr->ip_p == PROTO_TCP) {
 			tcp_hdr = (struct tcphdr*)(pkt_data + sizeof(struct ether_header) + ip_hdr_len);
 		} else {
-			printf("not tcp proto\n");
+			//printf("not tcp proto\n");
 			continue;
 		}
 	
@@ -116,17 +112,18 @@ int main(int argc, char *argv[]) {
 		int tcp_hdr_len = tcp_hdr->th_off * 4;
 
 		int start_offset = sizeof(struct ether_header) + ip_hdr_len + tcp_hdr_len;
-		// u_char *data_ptr = pkt_data + start_offset;
 		u_char *data_ptr = pkt_data;
 		data_ptr += start_offset;
 		int data_len = ip_total_len - ip_hdr_len - tcp_hdr_len;
-		//int another_len = header_ptr->len - ip_hdr_len - tcp_hdr_len - sizeof(struct ether_header);
-		//printf("data len %d %s %d\n", data_len, (data_len == another_len ? "==" : "!="), another_len);
 		if (data_len == 0) {
 			printf("No Payload included\n");
 		} else {
 			printf("* Packet Payload -------------------\n");
 			for (int offset = 0; offset < data_len; offset++) {
+				if (offset >= PAYLOAD_DUMP_LIMIT) {
+					printf("Payload truncated because of limit option\n");
+					break;
+				}
 				char ch = *(data_ptr+offset);
 				if (isprint(ch)) {
 					printf("%c", ch);
