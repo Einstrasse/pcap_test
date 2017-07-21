@@ -20,17 +20,15 @@ make
 ### Sources code explaination
 
 get_packet.c - capturing packet for a while and dump the contents of packet.    
-dump_if.c - dump network iterface name    
-sample.c - sample source code from web site
 
 
 ### Usage
 ```
 make
-./get_packet 50
+./get_packet eth0
 ```
 
-On above usage, 50 means the limit number of packet to dump.    
+On above usage, monitoring device name is eth0 (ethernet interface).
 Executing on previleged user(root) is recommended.
 
 
