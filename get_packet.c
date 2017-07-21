@@ -8,6 +8,7 @@
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
@@ -25,18 +26,15 @@ int main(int argc, char *argv[]) {
 	struct pcap_pkthdr* header_ptr;
 	const u_char *pkt_data;
 	int ether_len = 14;
-	int ip_hdr_len = -1;
-	u_char tcp_header_len = 0;
+	
 	capture_time = 1000;
 	int capture_packet_num_limit = 1;
 	if (argc < 2) {
 		printf("usage: %s [Network Interface name]\n", argv[0]);
 		exit(EXIT_SUCCESS);
 	}
-	//capture_packet_num_limit = atoi(argv[1]);
 	capture_packet_num_limit = 10000;
 
-	//dev = pcap_lookupdev(errbuf);
 	dev = argv[1];
 
 	if (dev == NULL) {
@@ -57,6 +55,7 @@ int main(int argc, char *argv[]) {
 	while(1) {
 		int status = pcap_next_ex(handle, &header_ptr, &pkt_data);
 		if (status == 0) {
+			printf("no packet\n");
 			continue;
 		} else if (status == -1) {
 			 fprintf(stderr, "Failed to set buffer size on capture handle : %s\n",
@@ -67,17 +66,24 @@ int main(int argc, char *argv[]) {
 		if (counter > capture_packet_num_limit) break;
 		struct ether_header *ether_hdr;
 		struct ip *ip_hdr;
+		struct tcphdr *tcp_hdr;
 		ether_hdr = (struct ether_header*)pkt_data;
 		if (ntohs(ether_hdr->ether_type) == ETHERTYPE_IP) {
 			ip_hdr = (struct ip*)(pkt_data + sizeof(struct ether_header));
 		} else {
+			printf("not ip proto\n");
 			//not IP protocol
 			continue;
 		}
-		if (ip_hdr->ip_p != PROTO_TCP) {
-			//printf("not tcp proto\n");
+		int ip_hdr_len = ip_hdr->ip_hl * 4;
+		int ip_total_len = ntohs(ip_hdr->ip_len);
+		if (ip_hdr->ip_p == PROTO_TCP) {
+			tcp_hdr = (struct tcphdr*)(pkt_data + sizeof(struct ether_header) + ip_hdr_len);
+		} else {
+			printf("not tcp proto\n");
 			continue;
 		}
+	
 
 		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
 		printf("%s", "* Dst MAC = ");
@@ -105,31 +111,25 @@ int main(int argc, char *argv[]) {
 		printf("* Src IP Addr = %s\n", src_ip_str);
 		printf("* Dst IP Addr = %s\n", dst_ip_str);
 		
-		// u_char* srcIP = (u_char*)(pkt_data + 26);
-		// printf("%s = %d.%d.%d.%d\n", "* Src IP Addr", srcIP[0], srcIP[1], srcIP[2], srcIP[3]);
-		// u_char* dstIP = (u_char*)(pkt_data + 30);
-		// printf("%s = %d.%d.%d.%d\n", "* Dst IP Addr", dstIP[0], dstIP[1], dstIP[2], dstIP[3]);
-		
-		if (ip_hdr_len != -1 && header_ptr->len >= ip_hdr_len + ether_len) {
-			u_short *srcPort = (u_short*)(pkt_data + ip_hdr_len + ether_len);
-			u_short *dstPort = (u_short*)(pkt_data + ip_hdr_len + ether_len + 2);
+		printf("%s = %d\n", "* Src Port", ntohs(tcp_hdr->th_sport));
+		printf("%s = %d\n", "* Dst Port", ntohs(tcp_hdr->th_dport));
+		int tcp_hdr_len = tcp_hdr->th_off * 4;
 
-			printf("%s = %d\n", "* Src Port", ntohs(*srcPort));
-			printf("%s = %d\n", "* Dst Port", ntohs(*dstPort));
-
-			tcp_header_len = *(pkt_data + ip_hdr_len + ether_len + 12);
-			tcp_header_len = tcp_header_len & 0xf0;
-			tcp_header_len = (tcp_header_len >> 4);
-			tcp_header_len *= 4;
-		}
-		if (tcp_header_len > 0 &&header_ptr->len >= ip_hdr_len + ether_len + tcp_header_len) {
+		int start_offset = sizeof(struct ether_header) + ip_hdr_len + tcp_hdr_len;
+		// u_char *data_ptr = pkt_data + start_offset;
+		u_char *data_ptr = pkt_data;
+		data_ptr += start_offset;
+		int data_len = ip_total_len - ip_hdr_len - tcp_hdr_len;
+		//int another_len = header_ptr->len - ip_hdr_len - tcp_hdr_len - sizeof(struct ether_header);
+		//printf("data len %d %s %d\n", data_len, (data_len == another_len ? "==" : "!="), another_len);
+		if (data_len == 0) {
+			printf("No Payload included\n");
+		} else {
 			printf("* Packet Payload -------------------\n");
-			int cnt = 0;
-			for (int idx = ip_hdr_len + ether_len + tcp_header_len; idx < header_ptr->len; idx++, cnt++) {
-				if (cnt > DATA_PRINT_LIMIT) break;
-				char ch = *(pkt_data + idx);
+			for (int offset = 0; offset < data_len; offset++) {
+				char ch = *(data_ptr+offset);
 				if (isprint(ch)) {
-					printf("%c", *(pkt_data + idx));
+					printf("%c", ch);
 				} else if (ch == '\r' || ch == '\n') {
 					printf("%c", ch);
 				} else {
@@ -138,11 +138,8 @@ int main(int argc, char *argv[]) {
 			}
 			putchar('\n');
 			printf("* Packet Payload End -------------------\n");
-		} else {
-			printf("There is no Data\n");
 		}
 	}
-
 
 	pcap_close(handle);
 	return EXIT_SUCCESS;

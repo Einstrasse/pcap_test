@@ -44,4 +44,6 @@ Referencing ip address structrue, struct in_addr
 https://www.joinc.co.kr/w/man/15/in_addr    
 Reference inet_ntop    
 https://www.joinc.co.kr/w/Site/TCP_IP/IPv6/IPv6Prog    
+Reference tcp header    
+http://unix.superglobalmegacorp.com/BSD4.4Lite2/newsrc/netinet/tcp.h.html    
 
