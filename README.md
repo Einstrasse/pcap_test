@@ -32,3 +32,9 @@ make
 
 On above usage, 50 means the limit number of packet to dump.    
 Executing on previleged user(root) is recommended.
+
+
+### References
+
+Referencing Ethernet header type struct    
+http://unix.superglobalmegacorp.com/Net2/newsrc/netinet/if_ether.h.html    

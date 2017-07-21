@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <ctype.h>
+#include <netinet/if_ether.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
 #define PACK_BUF_SIZE 1024
@@ -26,20 +27,24 @@ int main(int argc, char *argv[]) {
 	capture_time = 1000;
 	int capture_packet_num_limit = 1;
 	if (argc < 2) {
-		printf("usage: %s [MAXIMUM NUMBER OF PACKET TO CAPTURE]\n", argv[0]);
+		printf("usage: %s [Network Interface name]\n", argv[0]);
 		exit(EXIT_SUCCESS);
 	}
-	capture_packet_num_limit = atoi(argv[1]);
+	//capture_packet_num_limit = atoi(argv[1]);
+	capture_packet_num_limit = 10000;
 
-	dev = pcap_lookupdev(errbuf);
+	//dev = pcap_lookupdev(errbuf);
+	dev = argv[1];
+
 	if (dev == NULL) {
 		fprintf(stderr, "Cannot find default device: %s\n", errbuf);
 		exit(EXIT_FAILURE);
 	}
-	printf("Default Device: %s\n", dev);
+	printf("Interwork Interface Name: %s\n", dev);
 
 	printf("start capturing packet for %d milliseconds...\n", capture_time);
 	handle = pcap_open_live(dev, PACK_BUF_SIZE, 1, capture_time, errbuf);
+	//handle = pcap_open_live("dum0", PACK_BUF_SIZE, 1, capture_time, errbuf);
 	if (handle == NULL) {
 		fprintf(stderr, "Cannot open device %s: %s\n", dev, errbuf);
 		exit(EXIT_FAILURE);
@@ -57,30 +62,28 @@ int main(int argc, char *argv[]) {
 		}
 		counter++;
 		if (counter > capture_packet_num_limit) break;
+		struct ether_header *ether_hdr;
+		ether_hdr = (struct ether_header*)pkt_data;
+
 		printf("-=-=-=-=-=-=-=-=-=-=-=-=#%03d PACKET_LENGTH %d-=-=-=-=-==-=-=-=-=-==\n", counter, header_ptr->len);
 		printf("%s", "* Dst MAC = ");
 		for (int i=0; i < 6; i++) {
-			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
-				printf("%x", *(pkt_data + i) & 0xff);
-			} else {
-				printf("0%x", *(pkt_data + i) & 0xff);
-			}
+			printf("%02x", ether_hdr->ether_dhost[i]);
 			if (i < 5) putchar(':'); else putchar('\n');
 		}
 		printf("%s", "* Src MAC = ");
-		for (int i=6; i < 12; i++) {
-			if ( (*(pkt_data + i ) & 0xff) >= 0x10) {
-				printf("%x", *(pkt_data + i) & 0xff);
-			} else {
-				printf("0%x", *(pkt_data + i) & 0xff);
-			}
-			if (i < 11) putchar(':'); else putchar('\n');
+		for (int i=0; i < 6; i++) {
+			printf("%02x", ether_hdr->ether_shost[i]);
+			if (i < 5) putchar(':'); else putchar('\n');
 		}
-		if ( header_ptr->len >= 14 && *(pkt_data + 12) == 0x08 && *(pkt_data + 13) == 0x00) {
+		if (ether_hdr->ether_type == ETHERTYPE_IP) {
 			printf("* Network Layer Protocol Type: IPv4\n");
-			ip_hdr_len = ( *(pkt_data + 14) & 0xf ) * 4;
-			printf("* IP Packet header len: %d\n", ip_hdr_len);
 		}
+		// if ( header_ptr->len >= 14 && *(pkt_data + 12) == 0x08 && *(pkt_data + 13) == 0x00) {
+		// 	printf("* Network Layer Protocol Type: IPv4\n");
+		// 	ip_hdr_len = ( *(pkt_data + 14) & 0xf ) * 4;
+		// 	printf("* IP Packet header len: %d\n", ip_hdr_len);
+		// }
 			u_char protocol_4 = *(pkt_data + 23);
 		if ( header_ptr->len >= 24 ) {
 			if ( protocol_4 == 0x06 ) {
