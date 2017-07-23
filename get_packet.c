@@ -12,14 +12,13 @@
 #include <stdint.h>
 
 #define PCAP_ERR_BUF_SIZE 1024
-#define PACK_BUF_SIZE 1024
+#define PACK_BUF_SIZE 1024 * 64
 #define DATA_PRINT_LIMIT 300
 
 #define PROTO_TCP 0x06
 #define PROTO_UDP 0x11
 #define PAYLOAD_DUMP_LIMIT 100
 
-#pragma warning disable -Wdiscarded-qualifiers
 
 int capture_time;
 int main(int argc, char *argv[]) {
@@ -112,7 +111,7 @@ int main(int argc, char *argv[]) {
 		int tcp_hdr_len = tcp_hdr->th_off * 4;
 
 		int start_offset = sizeof(struct ether_header) + ip_hdr_len + tcp_hdr_len;
-		u_char *data_ptr = pkt_data;
+		u_char *data_ptr = (u_char*)pkt_data;
 		data_ptr += start_offset;
 		int data_len = ip_total_len - ip_hdr_len - tcp_hdr_len;
 		if (data_len == 0) {
