@@ -58,6 +58,9 @@ int main(int argc, char *argv[]) {
 			 fprintf(stderr, "Failed to set buffer size on capture handle : %s\n",
                         pcap_geterr(handle));
 			break;
+		} else if (status == -2) {
+			fprintf(stderr, "Finished reading packet data from packet files\n");
+			break;
 		}
 		counter++;
 		struct ether_header *ether_hdr;
